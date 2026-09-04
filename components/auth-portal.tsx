@@ -138,8 +138,8 @@ export function AuthPortal({
         <div id={formId} role="tabpanel">
           <h1 id="auth-title" className="sr-only">
             {mode === "signin"
-              ? "Sign in to Silicon Valley Robotics Center"
-              : "Create your Silicon Valley Robotics Center account"}
+              ? "Sign in to Robotics Center of Silicon Valley"
+              : "Create your Robotics Center of Silicon Valley account"}
           </h1>
 
           <button
