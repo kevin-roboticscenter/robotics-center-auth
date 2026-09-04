@@ -9,14 +9,14 @@ export function Brand({ compact = false }: BrandProps) {
     <div className={compact ? "brand brand-compact" : "brand"}>
       <Image
         className="brand-mark"
-        src="/rc-mark.svg"
+        src="/rc-logo.png"
         alt=""
-        width={compact ? 48 : 70}
-        height={compact ? 48 : 70}
+        width={604}
+        height={327}
         priority
       />
       <div className="brand-copy">
-        <p className="brand-name">Silicon Valley Robotics Center</p>
+        <p className="brand-name">Robotics Center of Silicon Valley</p>
         <p className="brand-kicker">Robotics data &amp; operations platform</p>
       </div>
     </div>

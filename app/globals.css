@@ -212,7 +212,11 @@ a {
   width: 70px;
   height: 70px;
   border-radius: 16px;
+  box-sizing: border-box;
+  padding: 11px 8px;
+  background: #fff;
   filter: drop-shadow(0 11px 22px rgba(0, 0, 0, 0.3));
+  object-fit: contain;
 }
 
 .brand-copy {
@@ -652,6 +656,7 @@ a {
   width: 48px;
   height: 48px;
   border-radius: 12px;
+  padding: 8px 6px;
 }
 
 .brand-compact .brand-copy {
