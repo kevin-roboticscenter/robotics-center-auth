@@ -5,19 +5,59 @@ import { FormEvent, useState } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { Brand } from "@/components/brand";
 import { BackIcon, EyeIcon } from "@/components/icons";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { safePortalPath } from "@/lib/auth/redirects";
+import { stashPortalReturn } from "@/lib/auth/return-cookie";
 
 type PreviewFormProps = {
   mode: "forgot" | "update";
+  returnTo?: string;
 };
 
-export function PreviewForm({ mode }: PreviewFormProps) {
+export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) {
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
   const isForgot = mode === "forgot";
+  const next = safePortalPath(returnTo);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice("Frontend preview only — nothing was submitted.");
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const data = new FormData(event.currentTarget);
+      const supabase = createBrowserSupabaseClient();
+      if (isForgot) {
+        stashPortalReturn(`/update-password?return_to=${encodeURIComponent(next)}`);
+        const { error: resetError } =
+          await supabase.auth.resetPasswordForEmail(
+            String(data.get("email") ?? "").trim(),
+            { redirectTo: `${window.location.origin}/auth/callback` },
+          );
+        if (resetError) throw resetError;
+        setNotice("Check your email for a secure password reset link.");
+        return;
+      }
+
+      const password = String(data.get("password") ?? "");
+      const confirmation = String(data.get("confirm-password") ?? "");
+      if (password !== confirmation) {
+        setError("The passwords do not match.");
+        return;
+      }
+      const { error: updateError } =
+        await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
+      window.location.assign(next);
+    } catch {
+      setError("We couldn’t complete that request. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -91,15 +131,33 @@ export function PreviewForm({ mode }: PreviewFormProps) {
             </>
           )}
 
-          <button className="primary-button" type="submit">
-            {isForgot ? "Send Reset Link" : "Update Password"}
+          <button
+            className="primary-button"
+            type="submit"
+            disabled={busy || !isSupabaseConfigured()}
+          >
+            {busy
+              ? "Please wait…"
+              : isForgot
+                ? "Send Reset Link"
+                : "Update Password"}
           </button>
           <p className="preview-notice" aria-live="polite">
-            {notice}
+            {!isSupabaseConfigured()
+              ? "Authentication is not configured for this Preview deployment."
+              : notice}
           </p>
+          {error ? (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          ) : null}
         </form>
 
-        <Link className="back-link" href="/">
+        <Link
+          className="back-link"
+          href={`/?return_to=${encodeURIComponent(next)}`}
+        >
           <BackIcon className="back-icon" />
           Back to sign in
         </Link>

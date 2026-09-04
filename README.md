@@ -8,9 +8,14 @@ Standalone authentication frontend for the Robotics Center product family:
 
 ## Current phase
 
-This repository is a frontend-only prototype. The forms deliberately prevent
-submission and make no authentication or API requests. Supabase Auth, shared
-sessions, OAuth, callback validation, and production redirects belong to Phase 2.
+The `codex/central-auth-integration` branch connects the portal UI to the same
+Supabase Auth project as the website. It implements email/password sign in,
+signup, Google, password recovery, password updates, server-side callbacks,
+logout, and the Supabase OAuth 2.1 consent UI.
+
+OAuth clients and callback destinations are deny-by-default. A client must be
+present in both `AUTH_ALLOWED_OAUTH_CLIENT_IDS` and
+`AUTH_ALLOWED_OAUTH_REDIRECT_URIS` before the portal will approve it.
 
 ## Local development
 
@@ -21,17 +26,22 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Preview routes
+## Routes
 
 - `/` — sign in and sign up
 - `/forgot-password` — password reset request
 - `/update-password` — password update
 - `/launcher` — post-login application chooser
 - `/error` — safe authentication error state
+- `/auth/callback` — Supabase login/recovery callback
+- `/oauth/consent` — first-party OAuth authorization screen
+- `/logout` — global portal signout with allowlisted return
 
 ## Deployment boundary
 
-Deploy this repository as its own Vercel project and attach
-`login.roboticscenter.ai` only after the frontend has been reviewed. Do not add
-production Supabase secrets to the browser bundle. Server-only credentials must
-remain in Vercel server environment variables when backend work begins.
+Deploy this branch only as a Vercel Preview until the website Preview test
+matrix passes. Do not move `login.roboticscenter.ai`, change the Supabase Site
+URL, or enable this flow in the website Production environment during Preview
+testing. Only the public Supabase URL and anon/publishable key belong in the
+browser bundle; OAuth client secrets stay in the website's server-only Vercel
+environment.

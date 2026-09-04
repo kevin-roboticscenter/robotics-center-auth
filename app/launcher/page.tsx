@@ -49,13 +49,13 @@ export default function LauncherPage() {
       <section className="launcher-panel" aria-labelledby="launcher-title">
         <header className="launcher-header">
           <Brand compact />
-          <Link className="quiet-button" href="/">
+          <Link className="quiet-button" href="/logout">
             Sign out
           </Link>
         </header>
 
         <div className="launcher-intro">
-          <span className="preview-pill">Frontend preview</span>
+          <span className="preview-pill">Authentication preview</span>
           <h1 id="launcher-title">Where would you like to go?</h1>
           <p>
             One Robotics Center account will provide secure access across all
@@ -88,8 +88,7 @@ export default function LauncherPage() {
         </div>
 
         <p className="launcher-note">
-          In Phase 2, this screen will appear only after the identity service has
-          verified the user. App links will never carry session tokens in the URL.
+          Application links never carry access or refresh tokens in the URL.
         </p>
       </section>
     </AuthShell>

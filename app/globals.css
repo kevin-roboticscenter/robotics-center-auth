@@ -46,6 +46,11 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 a {
   color: inherit;
 }
@@ -137,6 +142,49 @@ a {
 .auth-card {
   overflow: hidden;
   padding: 37px 42px 29px;
+}
+
+.form-error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.consent-card {
+  text-align: center;
+}
+
+.consent-scopes {
+  display: flex;
+  margin: 18px 0;
+  padding: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.consent-scopes li {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted-bright);
+  font-size: 12px;
+}
+
+.consent-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.consent-actions .quiet-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-bright);
 }
 
 .card-highlight {

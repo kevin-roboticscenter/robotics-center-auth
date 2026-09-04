@@ -5,24 +5,105 @@ import { FormEvent, useId, useState } from "react";
 import { AuthShell } from "@/components/auth-shell";
 import { Brand } from "@/components/brand";
 import { EyeIcon, GoogleIcon, ShieldIcon } from "@/components/icons";
+import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { safePortalPath } from "@/lib/auth/redirects";
+import { stashPortalReturn } from "@/lib/auth/return-cookie";
 
 type AuthMode = "signin" | "signup";
 
-export function AuthPortal() {
-  const [mode, setMode] = useState<AuthMode>("signin");
+export function AuthPortal({
+  initialMode = "signin",
+  returnTo = "/launcher",
+}: {
+  initialMode?: AuthMode;
+  returnTo?: string;
+}) {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const formId = useId();
+  const next = safePortalPath(returnTo);
 
   function selectMode(nextMode: AuthMode) {
     setMode(nextMode);
     setNotice("");
+    setError("");
     setShowPassword(false);
   }
 
-  function handlePreviewAction(event?: FormEvent<HTMLFormElement>) {
-    event?.preventDefault();
-    setNotice("Frontend preview only — nothing was submitted.");
+  function finish() {
+    window.location.assign(next);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const data = new FormData(event.currentTarget);
+      const email = String(data.get("email") ?? "").trim();
+      const password = String(data.get("password") ?? "");
+      const supabase = createBrowserSupabaseClient();
+
+      if (mode === "signin") {
+        const { error: signInError } =
+          await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) throw signInError;
+        finish();
+        return;
+      }
+
+      const firstName = String(data.get("given-name") ?? "").trim();
+      const lastName = String(data.get("family-name") ?? "").trim();
+      stashPortalReturn(next);
+      const { data: signup, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            full_name: `${firstName} ${lastName}`.trim(),
+          },
+        },
+      });
+      if (signupError) throw signupError;
+      if (signup.session) {
+        finish();
+        return;
+      }
+      setNotice("Check your email to confirm your account, then continue sign in.");
+    } catch {
+      setError("We couldn’t complete that request. Check your details and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleGoogle() {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      stashPortalReturn(next);
+      const supabase = createBrowserSupabaseClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (oauthError) throw oauthError;
+    } catch {
+      setError("Google sign in could not be started. Please try again.");
+      setBusy(false);
+    }
   }
 
   return (
@@ -64,7 +145,8 @@ export function AuthPortal() {
           <button
             className="oauth-button"
             type="button"
-            onClick={() => handlePreviewAction()}
+            disabled={busy || !isSupabaseConfigured()}
+            onClick={() => void handleGoogle()}
           >
             <GoogleIcon className="google-icon" />
             Continue with Google
@@ -74,7 +156,7 @@ export function AuthPortal() {
             <span>or</span>
           </div>
 
-          <form className="auth-form" onSubmit={handlePreviewAction}>
+          <form className="auth-form" onSubmit={handleSubmit}>
             {mode === "signup" ? (
               <div className="field-row">
                 <label className="field-label">
@@ -149,7 +231,11 @@ export function AuthPortal() {
                   <input type="checkbox" name="remember" />
                   <span>Keep me signed in</span>
                 </label>
-                <Link href="/forgot-password">Forgot password?</Link>
+                <Link
+                  href={`/forgot-password?return_to=${encodeURIComponent(next)}`}
+                >
+                  Forgot password?
+                </Link>
               </div>
             ) : (
               <p className="form-assurance">
@@ -158,13 +244,28 @@ export function AuthPortal() {
               </p>
             )}
 
-            <button className="primary-button" type="submit">
-              {mode === "signin" ? "Sign In" : "Create Account"}
+            <button
+              className="primary-button"
+              type="submit"
+              disabled={busy || !isSupabaseConfigured()}
+            >
+              {busy
+                ? "Please wait…"
+                : mode === "signin"
+                  ? "Sign In"
+                  : "Create Account"}
             </button>
 
             <p className="preview-notice" aria-live="polite">
-              {notice}
+              {!isSupabaseConfigured()
+                ? "Authentication is not configured for this Preview deployment."
+                : notice}
             </p>
+            {error ? (
+              <p className="form-error" role="alert">
+                {error}
+              </p>
+            ) : null}
           </form>
         </div>
 
