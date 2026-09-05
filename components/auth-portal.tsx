@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { FormEvent, useId, useState } from "react";
+import {
+  isAuthApiError,
+  isAuthRetryableFetchError,
+} from "@supabase/supabase-js";
 import { AuthShell } from "@/components/auth-shell";
 import { Brand } from "@/components/brand";
 import { EyeIcon, GoogleIcon, ShieldIcon } from "@/components/icons";
@@ -11,6 +15,42 @@ import { safePortalPath } from "@/lib/auth/redirects";
 import { stashPortalReturn } from "@/lib/auth/return-cookie";
 
 type AuthMode = "signin" | "signup";
+
+function authErrorMessage(error: unknown, mode: AuthMode): string {
+  if (isAuthRetryableFetchError(error)) {
+    return "We’re having trouble reaching the sign-in service. Check your connection and try again.";
+  }
+
+  if (isAuthApiError(error)) {
+    switch (error.code) {
+      case "invalid_credentials":
+        return "Email or password is incorrect.";
+      case "email_not_confirmed":
+        return "Please confirm your email before signing in. Check your inbox and spam folder.";
+      case "over_request_rate_limit":
+        return "Too many sign-in attempts. Wait a few minutes and try again.";
+      case "over_email_send_rate_limit":
+        return "Too many emails were requested. Wait a few minutes before trying again.";
+      case "request_timeout":
+        return "We’re having trouble reaching the sign-in service. Check your connection and try again.";
+      case "email_address_invalid":
+        return "Enter a valid email address.";
+      case "weak_password":
+        return "Choose a stronger password with at least 8 characters.";
+      case "signup_disabled":
+      case "email_provider_disabled":
+        return "New account creation is temporarily unavailable.";
+      default:
+        if (error.status === 429) {
+          return "Too many attempts. Wait a few minutes and try again.";
+        }
+    }
+  }
+
+  return mode === "signin"
+    ? "Sign in could not be completed. Try again."
+    : "Account creation could not be completed. Check your details and try again.";
+}
 
 export function AuthPortal({
   initialMode = "signin",
@@ -87,8 +127,8 @@ export function AuthPortal({
       setNotice(
         "Check your inbox and spam folder, then open the confirmation link in this browser within 10 minutes.",
       );
-    } catch {
-      setError("We couldn’t complete that request. Check your details and try again.");
+    } catch (caught) {
+      setError(authErrorMessage(caught, mode));
     } finally {
       setBusy(false);
     }
