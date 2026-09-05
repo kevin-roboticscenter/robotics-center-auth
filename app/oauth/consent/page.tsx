@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth-shell";
 import { Brand } from "@/components/brand";
+import { ConsentActions } from "@/components/consent-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   isAllowedOAuthRedirectUrl,
@@ -66,15 +67,7 @@ export default async function ConsentPage({ searchParams }: Props) {
             ))}
           </ul>
         ) : null}
-        <form className="consent-actions" action="/api/oauth/decision" method="post">
-          <input type="hidden" name="authorization_id" value={authorizationId} />
-          <button className="primary-button" name="decision" value="approve">
-            Continue
-          </button>
-          <button className="quiet-button" name="decision" value="deny">
-            Cancel
-          </button>
-        </form>
+        <ConsentActions authorizationId={authorizationId} />
       </section>
     </AuthShell>
   );
