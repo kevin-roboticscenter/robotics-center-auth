@@ -24,6 +24,7 @@ export function AuthPortal({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [signupSubmitted, setSignupSubmitted] = useState(false);
   const formId = useId();
   const next = safePortalPath(returnTo);
 
@@ -32,6 +33,7 @@ export function AuthPortal({
     setNotice("");
     setError("");
     setShowPassword(false);
+    setSignupSubmitted(false);
   }
 
   function finish() {
@@ -40,6 +42,9 @@ export function AuthPortal({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || (mode === "signup" && signupSubmitted)) return;
+
+    const form = event.currentTarget;
     setBusy(true);
     setError("");
     setNotice("");
@@ -77,7 +82,11 @@ export function AuthPortal({
         finish();
         return;
       }
-      setNotice("Check your email to confirm your account, then continue sign in.");
+      form.reset();
+      setSignupSubmitted(true);
+      setNotice(
+        "Check your inbox and spam folder, then open the confirmation link in this browser within 10 minutes.",
+      );
     } catch {
       setError("We couldn’t complete that request. Check your details and try again.");
     } finally {
@@ -247,20 +256,33 @@ export function AuthPortal({
             <button
               className="primary-button"
               type="submit"
-              disabled={busy || !isSupabaseConfigured()}
+              disabled={
+                busy ||
+                !isSupabaseConfigured() ||
+                (mode === "signup" && signupSubmitted)
+              }
             >
               {busy
                 ? "Please wait…"
                 : mode === "signin"
                   ? "Sign In"
-                  : "Create Account"}
+                  : signupSubmitted
+                    ? "Confirmation Email Sent"
+                    : "Create Account"}
             </button>
 
-            <p className="preview-notice" aria-live="polite">
-              {!isSupabaseConfigured()
-                ? "Authentication is not configured for this Preview deployment."
-                : notice}
-            </p>
+            {notice ? (
+              <div className="form-success" role="status">
+                <strong>Confirmation email sent</strong>
+                <span>{notice}</span>
+              </div>
+            ) : (
+              <p className="preview-notice" aria-live="polite">
+                {!isSupabaseConfigured()
+                  ? "Authentication is not configured for this Preview deployment."
+                  : ""}
+              </p>
+            )}
             {error ? (
               <p className="form-error" role="alert">
                 {error}
