@@ -7,7 +7,6 @@ import { Brand } from "@/components/brand";
 import { BackIcon, EyeIcon } from "@/components/icons";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { safePortalPath } from "@/lib/auth/redirects";
 import { stashPortalReturn } from "@/lib/auth/return-cookie";
 
 type PreviewFormProps = {
@@ -21,7 +20,8 @@ export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) 
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const isForgot = mode === "forgot";
-  const next = safePortalPath(returnTo);
+  // Server recovery pages validate this against the private origin allowlist.
+  const next = returnTo;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -29,13 +29,19 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Routes
 
 - `/` — sign in and sign up
-- `/forgot-password` — password reset request
-- `/update-password` — password update
+- `/forgot-password` — password reset request with an allowlisted post-update return
+- `/update-password` — password update, then a validated portal or first-party return
 - `/launcher` — post-login application chooser
 - `/error` — safe authentication error state
 - `/auth/callback` — Supabase login/recovery callback
 - `/oauth/consent` — first-party OAuth authorization screen
 - `/logout` — global portal signout with allowlisted return
+
+Sign-in, sign-up, Google, and OAuth consent `return_to` values remain restricted
+to portal-local paths. Only password recovery may carry an absolute post-update
+URL, and its origin must be listed in `AUTH_ALLOWED_RETURN_ORIGINS` (or be one
+of the built-in Robotics Center website origins). The email callback always
+returns to the portal's internal `/update-password` route first.
 
 ## Deployment boundary
 

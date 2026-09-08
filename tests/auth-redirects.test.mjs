@@ -4,6 +4,8 @@ import {
   allowedReturnOrigins,
   isAllowedOAuthRedirectUrl,
   safeExternalReturnUrl,
+  safePortalPath,
+  safeRecoveryReturnTarget,
 } from "../lib/auth/redirects.ts";
 
 const ENV_NAMES = [
@@ -106,4 +108,93 @@ test("external returns stay on an allowlisted origin", () => {
       fallback,
     );
   });
+});
+
+test("password recovery accepts portal paths and allowlisted absolute URLs", () => {
+  withAuthEnvironment(() => {
+    assert.equal(
+      safeRecoveryReturnTarget("/launcher?from=recovery"),
+      "/launcher?from=recovery",
+    );
+    assert.equal(
+      safeRecoveryReturnTarget(
+        "https://website-preview.example/account?password=updated#security",
+      ),
+      "https://website-preview.example/account?password=updated#security",
+    );
+    assert.equal(
+      safeRecoveryReturnTarget("https://www.roboticscenter.ai/account"),
+      "https://www.roboticscenter.ai/account",
+    );
+    assert.equal(
+      safeRecoveryReturnTarget("http://localhost:3000/account"),
+      "http://localhost:3000/account",
+    );
+  });
+});
+
+test("password recovery rejects unsafe or unlisted destinations", () => {
+  withAuthEnvironment(() => {
+    const fallback = "/launcher";
+    const rejected = [
+      "//website-preview.example/account",
+      "https:\\website-preview.example\\account",
+      "https://website-preview.example/account\nheader",
+      "https://evil.example/account",
+      "https://user@website-preview.example/account",
+      "https://user:password@website-preview.example/account",
+      "http://website-preview.example/account",
+      "ftp://localhost/account",
+      "https://website-preview.example:444/account",
+      "website-preview.example/account",
+    ];
+
+    for (const value of rejected) {
+      assert.equal(safeRecoveryReturnTarget(value), fallback, value);
+    }
+    assert.equal(
+      safeRecoveryReturnTarget([
+        "https://website-preview.example/account",
+        "https://evil.example/account",
+      ]),
+      fallback,
+    );
+  });
+});
+
+test("recovery callback return remains an internal update-password path", () => {
+  withAuthEnvironment(() => {
+    const websiteReturn = "https://website-preview.example/account";
+    const callbackReturn = `/update-password?return_to=${encodeURIComponent(
+      websiteReturn,
+    )}`;
+
+    assert.equal(safePortalPath(callbackReturn), callbackReturn);
+    const recoveredReturn = new URL(
+      callbackReturn,
+      "https://portal-preview.example",
+    ).searchParams.get("return_to");
+    assert.equal(
+      safeRecoveryReturnTarget(recoveredReturn),
+      websiteReturn,
+    );
+  });
+});
+
+test("main login and OAuth return values remain portal-path-only", () => {
+  assert.equal(
+    safePortalPath("https://website-preview.example/account"),
+    "/launcher",
+  );
+  assert.equal(
+    safePortalPath("/oauth/consent?authorization_id=trusted"),
+    "/oauth/consent?authorization_id=trusted",
+  );
+  assert.equal(
+    safePortalPath([
+      "/oauth/consent?authorization_id=trusted",
+      "https://evil.example",
+    ]),
+    "/launcher",
+  );
 });

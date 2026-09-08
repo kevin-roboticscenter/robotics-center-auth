@@ -29,10 +29,10 @@ function normalizedOrigin(value: string): string | null {
 }
 
 export function safePortalPath(
-  value: string | null | undefined,
+  value: string | string[] | null | undefined,
   fallback = "/launcher",
 ): string {
-  const raw = value?.trim();
+  const raw = typeof value === "string" ? value.trim() : "";
   if (
     !raw ||
     !raw.startsWith("/") ||
@@ -44,6 +44,40 @@ export function safePortalPath(
     return fallback;
   }
   return raw;
+}
+
+/**
+ * Password recovery may finish in a trusted first-party application. Keep the
+ * recovery callback itself on this portal, then use this allowlist for the
+ * post-update destination. All other sign-in/OAuth returns stay portal paths.
+ */
+export function safeRecoveryReturnTarget(
+  value: string | string[] | null | undefined,
+  fallback = "/launcher",
+): string {
+  const safeFallback = safePortalPath(fallback);
+  if (typeof value !== "string") return safeFallback;
+  const raw = value.trim();
+  if (
+    !raw ||
+    raw.startsWith("//") ||
+    raw.includes("\\") ||
+    /[\u0000-\u001f\u007f]/.test(raw)
+  ) {
+    return safeFallback;
+  }
+  if (raw.startsWith("/")) return safePortalPath(raw, safeFallback);
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return safeFallback;
+
+  try {
+    const candidate = new URL(raw);
+    if (candidate.username || candidate.password) return safeFallback;
+    if (!hasAllowedWebScheme(candidate)) return safeFallback;
+    if (!allowedReturnOrigins().has(candidate.origin)) return safeFallback;
+    return candidate.href;
+  } catch {
+    return safeFallback;
+  }
 }
 
 export function allowedReturnOrigins(): Set<string> {

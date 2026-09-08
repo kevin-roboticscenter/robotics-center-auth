@@ -2,7 +2,10 @@ import { AuthPortal } from "@/components/auth-portal";
 import { safePortalPath } from "@/lib/auth/redirects";
 
 type Props = {
-  searchParams: Promise<{ mode?: string; return_to?: string }>;
+  searchParams: Promise<{
+    mode?: string | string[];
+    return_to?: string | string[];
+  }>;
 };
 
 export default async function HomePage({ searchParams }: Props) {
