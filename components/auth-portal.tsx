@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useId, useState } from "react";
+import { FormEvent, useEffect, useId, useState } from "react";
 import {
   isAuthApiError,
   isAuthRetryableFetchError,
@@ -12,11 +12,16 @@ import { EyeIcon, GoogleIcon, ShieldIcon } from "@/components/icons";
 import { createBrowserSupabaseClient } from "@/lib/supabase/browser";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { safePortalPath } from "@/lib/auth/redirects";
+import {
+  CONFIRMATION_RESEND_COOLDOWN_SECONDS,
+  signupConfirmationResendParams,
+} from "@/lib/auth/resend-confirmation";
 import { stashPortalReturn } from "@/lib/auth/return-cookie";
 
 type AuthMode = "signin" | "signup";
+type AuthAction = AuthMode | "resend";
 
-function authErrorMessage(error: unknown, mode: AuthMode): string {
+function authErrorMessage(error: unknown, action: AuthAction): string {
   if (isAuthRetryableFetchError(error)) {
     return "We’re having trouble reaching the sign-in service. Check your connection and try again.";
   }
@@ -47,9 +52,13 @@ function authErrorMessage(error: unknown, mode: AuthMode): string {
     }
   }
 
-  return mode === "signin"
-    ? "Sign in could not be completed. Try again."
-    : "Account creation could not be completed. Check your details and try again.";
+  if (action === "signin") {
+    return "Sign in could not be completed. Try again.";
+  }
+  if (action === "resend") {
+    return "Confirmation email could not be sent. Wait a moment and try again.";
+  }
+  return "Account creation could not be completed. Check your details and try again.";
 }
 
 export function AuthPortal({
@@ -65,8 +74,19 @@ export function AuthPortal({
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [signupSubmitted, setSignupSubmitted] = useState(false);
+  const [signupEmail, setSignupEmail] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
   const formId = useId();
   const next = safePortalPath(returnTo);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timeout = window.setTimeout(
+      () => setResendCooldown((seconds) => Math.max(0, seconds - 1)),
+      1000,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [resendCooldown]);
 
   function selectMode(nextMode: AuthMode) {
     setMode(nextMode);
@@ -74,6 +94,8 @@ export function AuthPortal({
     setError("");
     setShowPassword(false);
     setSignupSubmitted(false);
+    setSignupEmail("");
+    setResendCooldown(0);
   }
 
   function finish() {
@@ -124,11 +146,43 @@ export function AuthPortal({
       }
       form.reset();
       setSignupSubmitted(true);
+      setSignupEmail(email);
+      setResendCooldown(CONFIRMATION_RESEND_COOLDOWN_SECONDS);
       setNotice(
         "If this email can be registered, you’ll receive a confirmation link. Check your inbox and spam folder, then open it in this browser within 10 minutes.",
       );
     } catch (caught) {
       setError(authErrorMessage(caught, mode));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    if (busy || !signupEmail || resendCooldown > 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      stashPortalReturn(next);
+      const supabase = createBrowserSupabaseClient();
+      const { error: resendError } = await supabase.auth.resend(
+        signupConfirmationResendParams(signupEmail, window.location.origin),
+      );
+      if (resendError) throw resendError;
+      setResendCooldown(CONFIRMATION_RESEND_COOLDOWN_SECONDS);
+      setNotice(
+        "If this email can be confirmed, another confirmation link is on the way. Check your inbox and spam folder, then use the newest link.",
+      );
+    } catch (caught) {
+      if (
+        isAuthApiError(caught) &&
+        (caught.code === "over_email_send_rate_limit" ||
+          caught.code === "over_request_rate_limit" ||
+          caught.status === 429)
+      ) {
+        setResendCooldown(CONFIRMATION_RESEND_COOLDOWN_SECONDS);
+      }
+      setError(authErrorMessage(caught, "resend"));
     } finally {
       setBusy(false);
     }
@@ -308,9 +362,23 @@ export function AuthPortal({
             </button>
 
             {notice ? (
-              <div className="form-success" role="status">
+              <div className="form-success" role="status" aria-live="polite">
                 <strong>Check your email</strong>
                 <span>{notice}</span>
+                {mode === "signup" && signupSubmitted && signupEmail ? (
+                  <button
+                    className="quiet-button resend-confirmation-button"
+                    type="button"
+                    disabled={busy || resendCooldown > 0}
+                    onClick={() => void handleResendConfirmation()}
+                  >
+                    {busy
+                      ? "Sending…"
+                      : resendCooldown > 0
+                        ? `Resend available in ${resendCooldown}s`
+                        : "Resend confirmation email"}
+                  </button>
+                ) : null}
               </div>
             ) : (
               <p className="preview-notice" aria-live="polite">
