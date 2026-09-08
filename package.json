@@ -10,9 +10,10 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

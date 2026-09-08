@@ -10,11 +10,18 @@ function csv(name: string): string[] {
     .filter(Boolean);
 }
 
+function hasAllowedWebScheme(url: URL): boolean {
+  return (
+    url.protocol === "https:" ||
+    (url.protocol === "http:" && url.hostname === "localhost")
+  );
+}
+
 function normalizedOrigin(value: string): string | null {
   try {
     const url = new URL(value);
     if (url.username || url.password) return null;
-    if (url.protocol !== "https:" && url.hostname !== "localhost") return null;
+    if (!hasAllowedWebScheme(url)) return null;
     return url.origin;
   } catch {
     return null;
@@ -74,6 +81,8 @@ export function isAllowedOAuthRequest(input: {
 export function isAllowedOAuthRedirectUrl(value: string): boolean {
   try {
     const url = new URL(value);
+    if (url.username || url.password) return false;
+    if (!hasAllowedWebScheme(url)) return false;
     const base = `${url.origin}${url.pathname}`;
     return new Set(csv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS")).has(base);
   } catch {

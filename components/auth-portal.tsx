@@ -275,11 +275,7 @@ export function AuthPortal({
             </label>
 
             {mode === "signin" ? (
-              <div className="form-options">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="remember" />
-                  <span>Keep me signed in</span>
-                </label>
+              <div className="form-options form-options-end">
                 <Link
                   href={`/forgot-password?return_to=${encodeURIComponent(next)}`}
                 >

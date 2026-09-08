@@ -476,18 +476,8 @@ a {
   color: #a8d0ff;
 }
 
-.checkbox-label {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  cursor: pointer;
-}
-
-.checkbox-label input {
-  width: 13px;
-  height: 13px;
-  margin: 0;
-  accent-color: var(--blue);
+.form-options-end {
+  justify-content: flex-end;
 }
 
 .form-assurance {
