@@ -125,7 +125,7 @@ export function AuthPortal({
       form.reset();
       setSignupSubmitted(true);
       setNotice(
-        "Check your inbox and spam folder, then open the confirmation link in this browser within 10 minutes.",
+        "If this email can be registered, you’ll receive a confirmation link. Check your inbox and spam folder, then open it in this browser within 10 minutes.",
       );
     } catch (caught) {
       setError(authErrorMessage(caught, mode));
@@ -303,13 +303,13 @@ export function AuthPortal({
                 : mode === "signin"
                   ? "Sign In"
                   : signupSubmitted
-                    ? "Confirmation Email Sent"
+                    ? "Check Your Email"
                     : "Create Account"}
             </button>
 
             {notice ? (
               <div className="form-success" role="status">
-                <strong>Confirmation email sent</strong>
+                <strong>Check your email</strong>
                 <span>{notice}</span>
               </div>
             ) : (

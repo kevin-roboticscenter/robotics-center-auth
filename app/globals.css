@@ -465,6 +465,10 @@ a {
   font-size: 11px;
 }
 
+.form-options-end {
+  justify-content: flex-end;
+}
+
 .form-options a,
 .back-link {
   color: #7eb6ff;
@@ -474,10 +478,6 @@ a {
 .form-options a:hover,
 .back-link:hover {
   color: #a8d0ff;
-}
-
-.form-options-end {
-  justify-content: flex-end;
 }
 
 .form-assurance {
@@ -660,6 +660,10 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+.launcher-header form {
+  margin: 0;
+}
+
 .brand-compact {
   flex-direction: row;
   text-align: left;
@@ -763,6 +767,18 @@ a {
   background: rgba(17, 26, 45, 0.9);
   box-shadow: 0 17px 36px rgba(0, 0, 0, 0.22);
   transform: translateY(-3px);
+}
+
+.app-card-disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.app-card-disabled:hover {
+  border-color: var(--border);
+  background: rgba(8, 14, 26, 0.55);
+  box-shadow: none;
+  transform: none;
 }
 
 .app-icon {

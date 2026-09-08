@@ -15,13 +15,24 @@ export async function GET(request: Request) {
   );
 
   if (code) {
-    const supabase = await createServerSupabaseClient();
+    const responseHeaders = new Headers();
+    const supabase = await createServerSupabaseClient(responseHeaders);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      const response = NextResponse.redirect(new URL(next, url.origin));
+      const response = NextResponse.redirect(new URL(next, url.origin), {
+        headers: responseHeaders,
+      });
       clearPortalReturn(response);
       return response;
     }
+
+    const failure = new URL("/error", url.origin);
+    failure.searchParams.set("reason", "callback");
+    const response = NextResponse.redirect(failure, {
+      headers: responseHeaders,
+    });
+    clearPortalReturn(response);
+    return response;
   }
 
   const failure = new URL("/error", url.origin);

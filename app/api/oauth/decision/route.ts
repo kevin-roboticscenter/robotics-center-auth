@@ -4,11 +4,10 @@ import {
   isAllowedOAuthRedirectUrl,
   isAllowedOAuthRequest,
 } from "@/lib/auth/redirects";
+import { hasSameOrigin } from "@/lib/auth/request";
 
 export async function POST(request: Request) {
-  const requestUrl = new URL(request.url);
-  const origin = request.headers.get("origin");
-  if (origin !== requestUrl.origin) {
+  if (!hasSameOrigin(request)) {
     return NextResponse.json({ error: "Invalid request origin" }, { status: 403 });
   }
 
@@ -19,7 +18,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid authorization decision" }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
+  const responseHeaders = new Headers();
+  const supabase = await createServerSupabaseClient(responseHeaders);
   const details =
     await supabase.auth.oauth.getAuthorizationDetails(authorizationId);
   if (
@@ -31,7 +31,10 @@ export async function POST(request: Request) {
       redirectUri: details.data.redirect_uri,
     })
   ) {
-    return NextResponse.json({ error: "Untrusted OAuth client" }, { status: 403 });
+    return NextResponse.json(
+      { error: "Untrusted OAuth client" },
+      { status: 403, headers: responseHeaders },
+    );
   }
 
   const result =
@@ -48,7 +51,13 @@ export async function POST(request: Request) {
     !result.data?.redirect_url ||
     !isAllowedOAuthRedirectUrl(result.data.redirect_url)
   ) {
-    return NextResponse.json({ error: "Authorization failed" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Authorization failed" },
+      { status: 400, headers: responseHeaders },
+    );
   }
-  return NextResponse.redirect(result.data.redirect_url, 303);
+  return NextResponse.redirect(result.data.redirect_url, {
+    status: 303,
+    headers: responseHeaders,
+  });
 }

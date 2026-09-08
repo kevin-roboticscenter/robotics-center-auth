@@ -1,0 +1,41 @@
+import { Children, isValidElement, type ReactElement, type ReactNode } from "react";
+import { describe, expect, test } from "vitest";
+import LauncherPage from "@/app/launcher/page";
+
+function elements(node: ReactNode, type: string): ReactElement[] {
+  if (!isValidElement(node)) return [];
+  const current = node.type === type ? [node] : [];
+  const props = node.props as { children?: ReactNode };
+  return [
+    ...current,
+    ...Children.toArray(props.children).flatMap((child) =>
+      elements(child, type),
+    ),
+  ];
+}
+
+function props(element: ReactElement): Record<string, unknown> {
+  return element.props as Record<string, unknown>;
+}
+
+describe("application launcher", () => {
+  test("does not link Platform or CenterOS before their SSO integrations exist", () => {
+    const page = LauncherPage();
+    expect(elements(page, "a").map((item) => props(item).href)).toEqual([
+      "https://www.roboticscenter.ai/",
+    ]);
+    expect(
+      elements(page, "div").filter(
+        (item) => props(item)["aria-disabled"] === "true",
+      ),
+    ).toHaveLength(2);
+  });
+
+  test("uses same-origin POST for launcher sign out", () => {
+    const [form] = elements(LauncherPage(), "form");
+    expect(form?.props).toMatchObject({
+      action: "/api/logout",
+      method: "post",
+    });
+  });
+});

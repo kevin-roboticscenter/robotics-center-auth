@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AuthShell } from "@/components/auth-shell";
 import { Brand } from "@/components/brand";
 import {
@@ -22,6 +21,7 @@ const applications = [
     domain: "roboticscenter.ai",
     className: "app-icon-blue",
     icon: GlobeIcon,
+    available: true,
   },
   {
     name: "Data Platform",
@@ -31,6 +31,7 @@ const applications = [
     domain: "platform.roboticscenter.ai",
     className: "app-icon-violet",
     icon: PlatformIcon,
+    available: false,
   },
   {
     name: "CenterOS",
@@ -40,6 +41,7 @@ const applications = [
     domain: "centeros.roboticscenter.ai",
     className: "app-icon-cyan",
     icon: CenterOsIcon,
+    available: false,
   },
 ];
 
@@ -49,46 +51,68 @@ export default function LauncherPage() {
       <section className="launcher-panel" aria-labelledby="launcher-title">
         <header className="launcher-header">
           <Brand compact />
-          <Link className="quiet-button" href="/logout">
-            Sign out
-          </Link>
+          <form action="/api/logout" method="post">
+            <button className="quiet-button" type="submit">
+              Sign out
+            </button>
+          </form>
         </header>
 
         <div className="launcher-intro">
           <span className="preview-pill">Authentication preview</span>
           <h1 id="launcher-title">Where would you like to go?</h1>
           <p>
-            One Robotics Center account will provide secure access across all
-            three applications.
+            Website sign-in is being tested first. Platform and CenterOS will
+            be connected to the shared account in later rollout phases.
           </p>
         </div>
 
         <div className="app-grid">
           {applications.map((application) => {
             const Icon = application.icon;
-
-            return (
-              <a
-                className="app-card"
-                href={application.href}
-                key={application.name}
-              >
+            const content = (
+              <>
                 <span className={`app-icon ${application.className}`}>
                   <Icon />
                 </span>
                 <span className="app-card-copy">
                   <strong>{application.name}</strong>
                   <span>{application.description}</span>
-                  <small>{application.domain}</small>
+                  <small>
+                    {application.available
+                      ? application.domain
+                      : `${application.domain} · SSO coming later`}
+                  </small>
                 </span>
-                <ArrowIcon className="app-arrow" />
+                {application.available ? (
+                  <ArrowIcon className="app-arrow" />
+                ) : null}
+              </>
+            );
+
+            return application.available ? (
+              <a
+                className="app-card"
+                href={application.href}
+                key={application.name}
+              >
+                {content}
               </a>
+            ) : (
+              <div
+                aria-disabled="true"
+                className="app-card app-card-disabled"
+                key={application.name}
+              >
+                {content}
+              </div>
             );
           })}
         </div>
 
         <p className="launcher-note">
-          Application links never carry access or refresh tokens in the URL.
+          Available application links never carry access or refresh tokens in
+          the URL.
         </p>
       </section>
     </AuthShell>
