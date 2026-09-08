@@ -9,6 +9,8 @@ import {
 } from "../lib/auth/redirects.ts";
 
 const ENV_NAMES = [
+  "AUTH_ALLOWED_OAUTH_CLIENTS",
+  "AUTH_ALLOWED_OAUTH_CLIENT_IDS",
   "AUTH_ALLOWED_OAUTH_REDIRECT_URIS",
   "AUTH_ALLOWED_RETURN_ORIGINS",
 ];
@@ -18,6 +20,8 @@ function withAuthEnvironment(run) {
     ENV_NAMES.map((name) => [name, process.env[name]]),
   );
 
+  delete process.env.AUTH_ALLOWED_OAUTH_CLIENTS;
+  process.env.AUTH_ALLOWED_OAUTH_CLIENT_IDS = "website-preview";
   process.env.AUTH_ALLOWED_OAUTH_REDIRECT_URIS =
     "https://website-preview.example/auth/sso/callback";
   process.env.AUTH_ALLOWED_RETURN_ORIGINS =
@@ -60,14 +64,18 @@ test("OAuth redirect allowlist accepts only the exact trusted callback base", ()
       ),
       false,
     );
-    process.env.AUTH_ALLOWED_OAUTH_REDIRECT_URIS =
-      "ftp://localhost/auth/sso/callback,http://localhost:3000/auth/sso/callback";
+    process.env.AUTH_ALLOWED_OAUTH_CLIENTS = JSON.stringify({
+      "website-preview": ["ftp://localhost/auth/sso/callback"],
+    });
     assert.equal(
       isAllowedOAuthRedirectUrl(
         "ftp://localhost/auth/sso/callback?code=code",
       ),
       false,
     );
+    process.env.AUTH_ALLOWED_OAUTH_CLIENTS = JSON.stringify({
+      "website-preview": ["http://localhost:3000/auth/sso/callback"],
+    });
     assert.equal(
       isAllowedOAuthRedirectUrl(
         "http://localhost:3000/auth/sso/callback?code=code",

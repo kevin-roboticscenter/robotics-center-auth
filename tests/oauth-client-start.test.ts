@@ -42,8 +42,10 @@ function authClient(signedIn: boolean) {
 
 beforeEach(() => {
   mocks.createServerSupabaseClient.mockReset();
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENT_IDS", "website-preview");
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS", callback);
+  vi.stubEnv(
+    "AUTH_ALLOWED_OAUTH_CLIENTS",
+    JSON.stringify({ "website-preview": [callback] }),
+  );
 });
 
 afterEach(() => {
@@ -79,7 +81,10 @@ describe("OAuth client start helpers", () => {
 
   test("rejects an allowlisted non-web callback scheme", () => {
     const blobCallback = "blob:https://website-preview.example/callback";
-    vi.stubEnv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS", blobCallback);
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({ "website-preview": [blobCallback] }),
+    );
     const query = new URLSearchParams({
       intent: "signup",
       client_id: "website-preview",

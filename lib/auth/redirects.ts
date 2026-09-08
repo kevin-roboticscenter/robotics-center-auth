@@ -1,3 +1,12 @@
+import {
+  allowedOAuthClients,
+  allowedOAuthRedirectUris,
+  hasAllowedWebScheme,
+  normalizedOAuthRedirectUri,
+} from "./oauth-allowlist.ts";
+
+export { hasAllowedWebScheme } from "./oauth-allowlist.ts";
+
 const DEFAULT_RETURN_ORIGINS = [
   "https://roboticscenter.ai",
   "https://www.roboticscenter.ai",
@@ -8,13 +17,6 @@ function csv(name: string): string[] {
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-}
-
-export function hasAllowedWebScheme(url: URL): boolean {
-  return (
-    url.protocol === "https:" ||
-    (url.protocol === "http:" && url.hostname === "localhost")
-  );
 }
 
 function normalizedOrigin(value: string): string | null {
@@ -108,18 +110,26 @@ export function isAllowedOAuthRequest(input: {
   clientId: string;
   redirectUri: string;
 }): boolean {
-  const clients = new Set(csv("AUTH_ALLOWED_OAUTH_CLIENT_IDS"));
-  const redirects = new Set(csv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS"));
-  return clients.has(input.clientId) && redirects.has(input.redirectUri);
+  const redirectUri = normalizedOAuthRedirectUri(input.redirectUri);
+  if (!redirectUri) return false;
+  return allowedOAuthClients().get(input.clientId)?.has(redirectUri) ?? false;
 }
 
-export function isAllowedOAuthRedirectUrl(value: string): boolean {
+export function isAllowedOAuthRedirectUrl(
+  value: string,
+  expectedRedirectUri?: string,
+): boolean {
+  if (value.includes("\\") || /[\u0000-\u001f\u007f]/.test(value)) {
+    return false;
+  }
   try {
     const url = new URL(value);
     if (url.username || url.password) return false;
     if (!hasAllowedWebScheme(url)) return false;
     const base = `${url.origin}${url.pathname}`;
-    return new Set(csv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS")).has(base);
+    if (!allowedOAuthRedirectUris().has(base)) return false;
+    if (expectedRedirectUri === undefined) return true;
+    return normalizedOAuthRedirectUri(expectedRedirectUri) === base;
   } catch {
     return false;
   }

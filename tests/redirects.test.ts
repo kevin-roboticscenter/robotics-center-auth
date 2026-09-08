@@ -6,6 +6,17 @@ import {
   safeExternalReturnUrl,
   safePortalPath,
 } from "@/lib/auth/redirects";
+import { allowedOAuthClients } from "@/lib/auth/oauth-allowlist";
+
+const websiteCallback =
+  "https://preview.roboticscenter.ai/auth/sso/callback";
+
+function stubMappedOAuthClient() {
+  vi.stubEnv(
+    "AUTH_ALLOWED_OAUTH_CLIENTS",
+    JSON.stringify({ "website-preview": [websiteCallback] }),
+  );
+}
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -74,11 +85,7 @@ describe("external return allowlist", () => {
 
 describe("OAuth consent allowlists", () => {
   test("requires an exact client id and exact callback URI", () => {
-    vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENT_IDS", "website-preview");
-    vi.stubEnv(
-      "AUTH_ALLOWED_OAUTH_REDIRECT_URIS",
-      "https://preview.roboticscenter.ai/auth/sso/callback",
-    );
+    stubMappedOAuthClient();
 
     expect(
       isAllowedOAuthRequest({
@@ -101,10 +108,7 @@ describe("OAuth consent allowlists", () => {
   });
 
   test("allows callback query parameters but rejects credentials and path changes", () => {
-    vi.stubEnv(
-      "AUTH_ALLOWED_OAUTH_REDIRECT_URIS",
-      "https://preview.roboticscenter.ai/auth/sso/callback",
-    );
+    stubMappedOAuthClient();
     expect(
       isAllowedOAuthRedirectUrl(
         "https://preview.roboticscenter.ai/auth/sso/callback?code=abc&state=123",
@@ -119,6 +123,109 @@ describe("OAuth consent allowlists", () => {
       isAllowedOAuthRedirectUrl(
         "https://preview.roboticscenter.ai/auth/sso/callback/extra?code=abc",
       ),
+    ).toBe(false);
+  });
+
+  test("binds every configured client to only its own callbacks", () => {
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({
+        "website-preview": [
+          "https://website-preview.example/auth/sso/callback",
+        ],
+        "centeros-preview": [
+          "https://centeros-preview.example/auth/sso/callback",
+        ],
+      }),
+    );
+
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "website-preview",
+        redirectUri: "https://website-preview.example/auth/sso/callback",
+      }),
+    ).toBe(true);
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "centeros-preview",
+        redirectUri: "https://centeros-preview.example/auth/sso/callback",
+      }),
+    ).toBe(true);
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "website-preview",
+        redirectUri: "https://centeros-preview.example/auth/sso/callback",
+      }),
+    ).toBe(false);
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "centeros-preview",
+        redirectUri: "https://website-preview.example/auth/sso/callback",
+      }),
+    ).toBe(false);
+  });
+
+  test("fails closed for malformed mapped config without legacy fallback", () => {
+    vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENTS", "not-json");
+    vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENT_IDS", "website-preview");
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_REDIRECT_URIS",
+      "https://website-preview.example/auth/sso/callback",
+    );
+
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "website-preview",
+        redirectUri: "https://website-preview.example/auth/sso/callback",
+      }),
+    ).toBe(false);
+  });
+
+  test("legacy lists remain compatible only for one exact pair", () => {
+    expect(
+      allowedOAuthClients({
+        AUTH_ALLOWED_OAUTH_CLIENT_IDS: "website-preview",
+        AUTH_ALLOWED_OAUTH_REDIRECT_URIS:
+          "https://website-preview.example/auth/sso/callback",
+      }).get("website-preview"),
+    ).toEqual(
+      new Set(["https://website-preview.example/auth/sso/callback"]),
+    );
+    expect(
+      allowedOAuthClients({
+        AUTH_ALLOWED_OAUTH_CLIENT_IDS:
+          "website-preview,centeros-preview",
+        AUTH_ALLOWED_OAUTH_REDIRECT_URIS:
+          "https://website-preview.example/auth/sso/callback,https://centeros-preview.example/auth/sso/callback",
+      }).size,
+    ).toBe(0);
+  });
+
+  test.each([
+    "https://preview.roboticscenter.ai:443/auth/sso/callback",
+    "https://PREVIEW.roboticscenter.ai/auth/sso/callback",
+    "https://preview.roboticscenter.ai/auth/./sso/callback",
+    "https://preview.roboticscenter.ai/auth/sso/call\nback",
+  ])("rejects a callback that URL parsing would rewrite: %s", (redirectUri) => {
+    stubMappedOAuthClient();
+    expect(
+      isAllowedOAuthRequest({ clientId: "website-preview", redirectUri }),
+    ).toBe(false);
+  });
+
+  test("rejects a map that assigns the same callback to two clients", () => {
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({
+        "website-preview": [websiteCallback],
+        "centeros-preview": [websiteCallback],
+      }),
+    );
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "website-preview",
+        redirectUri: websiteCallback,
+      }),
     ).toBe(false);
   });
 });

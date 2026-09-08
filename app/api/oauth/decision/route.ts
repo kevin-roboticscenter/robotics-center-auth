@@ -49,7 +49,10 @@ export async function POST(request: Request) {
   if (
     result.error ||
     !result.data?.redirect_url ||
-    !isAllowedOAuthRedirectUrl(result.data.redirect_url)
+    !isAllowedOAuthRedirectUrl(
+      result.data.redirect_url,
+      details.data.redirect_uri,
+    )
   ) {
     return NextResponse.json(
       { error: "Authorization failed" },

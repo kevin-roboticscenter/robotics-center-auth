@@ -57,8 +57,10 @@ function findElement(node: ReactNode, type: ElementType): ReactElement | null {
 beforeEach(() => {
   mocks.createServerSupabaseClient.mockReset();
   mocks.redirect.mockClear();
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENT_IDS", "website-preview");
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS", callback);
+  vi.stubEnv(
+    "AUTH_ALLOWED_OAUTH_CLIENTS",
+    JSON.stringify({ "website-preview": [callback] }),
+  );
 });
 
 afterEach(() => {

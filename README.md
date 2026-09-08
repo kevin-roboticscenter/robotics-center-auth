@@ -13,9 +13,10 @@ Supabase Auth project as the website. It implements email/password sign in,
 signup, Google, password recovery, password updates, server-side callbacks,
 logout, and the Supabase OAuth 2.1 consent UI.
 
-OAuth clients and callback destinations are deny-by-default. A client must be
-present in both `AUTH_ALLOWED_OAUTH_CLIENT_IDS` and
-`AUTH_ALLOWED_OAUTH_REDIRECT_URIS` before the portal will approve it.
+OAuth clients and callback destinations are deny-by-default. Configure the
+server-only `AUTH_ALLOWED_OAUTH_CLIENTS` variable as an exact JSON map from each
+client ID to its permitted callback URI array. Invalid maps deny all requests,
+and a callback assigned to one client cannot be used by another client.
 
 ## Local development
 
@@ -51,3 +52,11 @@ URL, or enable this flow in the website Production environment during Preview
 testing. Only the public Supabase URL and anon/publishable key belong in the
 browser bundle; OAuth client secrets stay in the website's server-only Vercel
 environment.
+
+For a zero-downtime Preview migration, the previous
+`AUTH_ALLOWED_OAUTH_CLIENT_IDS` and `AUTH_ALLOWED_OAUTH_REDIRECT_URIS` variables
+remain compatible only when they contain exactly one client and one callback.
+Multiple legacy entries deny all OAuth requests. Add
+`AUTH_ALLOWED_OAUTH_CLIENTS` to the Preview branch scope and redeploy before
+removing the legacy variables. Changing this map requires a redeploy because
+its callback origins are also compiled into the portal's CSP `form-action`.

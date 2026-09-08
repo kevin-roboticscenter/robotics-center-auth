@@ -70,8 +70,10 @@ function authClient(options?: { details?: ReturnType<typeof trustedDetails> }) {
 
 beforeEach(() => {
   mocks.createServerSupabaseClient.mockReset();
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_CLIENT_IDS", "website-preview");
-  vi.stubEnv("AUTH_ALLOWED_OAUTH_REDIRECT_URIS", callback);
+  vi.stubEnv(
+    "AUTH_ALLOWED_OAUTH_CLIENTS",
+    JSON.stringify({ "website-preview": [callback] }),
+  );
 });
 
 afterEach(() => {
@@ -170,5 +172,32 @@ describe("OAuth consent decision", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Authorization failed",
     });
+  });
+
+  test("rejects a provider redirect assigned to a different trusted client", async () => {
+    const centerosCallback =
+      "https://centeros-preview.example/auth/sso/callback";
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({
+        "website-preview": [callback],
+        "centeros-preview": [centerosCallback],
+      }),
+    );
+    const client = authClient();
+    client.auth.oauth.approveAuthorization.mockResolvedValue({
+      data: { redirect_url: `${centerosCallback}?code=secret` },
+      error: null,
+    });
+    mocks.createServerSupabaseClient.mockResolvedValue(client);
+
+    const response = await POST(
+      request({
+        origin: "https://login-preview.example",
+        authorizationId: "authorization-id",
+        decision: "approve",
+      }),
+    );
+    expect(response.status).toBe(400);
   });
 });

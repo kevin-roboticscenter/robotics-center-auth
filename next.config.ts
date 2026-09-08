@@ -1,13 +1,12 @@
 import type { NextConfig } from "next";
+import { allowedOAuthRedirectUris } from "./lib/auth/oauth-allowlist.ts";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 function oauthFormActionOrigins(): string[] {
   const origins = new Set<string>();
 
-  for (const value of (
-    process.env.AUTH_ALLOWED_OAUTH_REDIRECT_URIS ?? ""
-  ).split(",")) {
+  for (const value of allowedOAuthRedirectUris()) {
     try {
       const url = new URL(value.trim());
       const isLocalDevelopmentUrl =
