@@ -59,11 +59,12 @@ export default function LauncherPage() {
         </header>
 
         <div className="launcher-intro">
-          <span className="preview-pill">Authentication preview</span>
+          <span className="preview-pill">Central account</span>
           <h1 id="launcher-title">Where would you like to go?</h1>
           <p>
-            Website sign-in is being tested first. Platform and CenterOS will
-            be connected to the shared account in later rollout phases.
+            Use your Robotics Center account across connected applications.
+            Website access is available now; Platform and CenterOS sign-in will
+            be added separately.
           </p>
         </div>
 
@@ -81,7 +82,7 @@ export default function LauncherPage() {
                   <small>
                     {application.available
                       ? application.domain
-                      : `${application.domain} · SSO coming later`}
+                      : `${application.domain} · Sign-in not available yet`}
                   </small>
                 </span>
                 {application.available ? (

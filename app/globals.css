@@ -606,6 +606,28 @@ a {
   text-align: center;
 }
 
+.unavailable-card {
+  text-align: center;
+}
+
+.unavailable-app-icon {
+  width: 52px;
+  height: 52px;
+  margin: 28px auto -8px;
+}
+
+.unavailable-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.unavailable-actions .quiet-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-bright);
+}
+
 .error-symbol {
   display: grid;
   width: 50px;

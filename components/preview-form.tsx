@@ -159,7 +159,7 @@ export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) 
           ) : (
             <p className="preview-notice" aria-live="polite">
               {!isSupabaseConfigured()
-                ? "Authentication is not configured for this Preview deployment."
+                ? "Authentication is temporarily unavailable. Please try again later."
                 : ""}
             </p>
           )}

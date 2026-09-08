@@ -18,6 +18,18 @@ function props(element: ReactElement): Record<string, unknown> {
   return element.props as Record<string, unknown>;
 }
 
+function textContent(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (!isValidElement(node)) return "";
+  return Children.toArray(
+    (node.props as { children?: ReactNode }).children,
+  )
+    .map(textContent)
+    .join(" ");
+}
+
 describe("application launcher", () => {
   test("does not link Platform or CenterOS before their SSO integrations exist", () => {
     const page = LauncherPage();
@@ -37,5 +49,13 @@ describe("application launcher", () => {
       action: "/api/logout",
       method: "post",
     });
+  });
+
+  test("uses production-ready application availability copy", () => {
+    const copy = textContent(LauncherPage());
+    expect(copy).toContain("Central account");
+    expect(copy).toContain("Sign-in not available yet");
+    expect(copy).not.toContain("Authentication preview");
+    expect(copy).not.toContain("being tested");
   });
 });
