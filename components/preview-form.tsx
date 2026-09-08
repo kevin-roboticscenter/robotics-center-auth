@@ -25,6 +25,7 @@ export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) 
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || (isForgot && notice)) return;
     setBusy(true);
     setError("");
     setNotice("");
@@ -39,7 +40,9 @@ export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) 
             { redirectTo: `${window.location.origin}/auth/callback` },
           );
         if (resetError) throw resetError;
-        setNotice("Check your email for a secure password reset link.");
+        setNotice(
+          "Check your inbox and spam folder for a secure password reset link. Open it in this browser to continue.",
+        );
         return;
       }
 
@@ -134,19 +137,32 @@ export function PreviewForm({ mode, returnTo = "/launcher" }: PreviewFormProps) 
           <button
             className="primary-button"
             type="submit"
-            disabled={busy || !isSupabaseConfigured()}
+            disabled={
+              busy ||
+              !isSupabaseConfigured() ||
+              (isForgot && Boolean(notice))
+            }
           >
             {busy
               ? "Please wait…"
+              : isForgot && notice
+                ? "Reset Email Sent"
               : isForgot
                 ? "Send Reset Link"
                 : "Update Password"}
           </button>
-          <p className="preview-notice" aria-live="polite">
-            {!isSupabaseConfigured()
-              ? "Authentication is not configured for this Preview deployment."
-              : notice}
-          </p>
+          {notice ? (
+            <div className="form-success" role="status" aria-live="polite">
+              <strong>Reset email sent</strong>
+              <span>{notice}</span>
+            </div>
+          ) : (
+            <p className="preview-notice" aria-live="polite">
+              {!isSupabaseConfigured()
+                ? "Authentication is not configured for this Preview deployment."
+                : ""}
+            </p>
+          )}
           {error ? (
             <p className="form-error" role="alert">
               {error}
