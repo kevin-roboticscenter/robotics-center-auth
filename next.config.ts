@@ -2,6 +2,36 @@ import type { NextConfig } from "next";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
+function oauthFormActionOrigins(): string[] {
+  const origins = new Set<string>();
+
+  for (const value of (
+    process.env.AUTH_ALLOWED_OAUTH_REDIRECT_URIS ?? ""
+  ).split(",")) {
+    try {
+      const url = new URL(value.trim());
+      const isLocalDevelopmentUrl =
+        isDevelopment &&
+        url.protocol === "http:" &&
+        ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+
+      if (
+        !url.username &&
+        !url.password &&
+        (url.protocol === "https:" || isLocalDevelopmentUrl)
+      ) {
+        origins.add(url.origin);
+      }
+    } catch {
+      // Invalid redirect entries stay blocked by the CSP.
+    }
+  }
+
+  return [...origins];
+}
+
+const formActionSources = ["'self'", ...oauthFormActionOrigins()].join(" ");
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
@@ -11,7 +41,7 @@ const contentSecurityPolicy = [
   `connect-src 'self' https://*.supabase.co${isDevelopment ? " ws: http:" : ""}`,
   "frame-ancestors 'none'",
   "base-uri 'self'",
-  "form-action 'self'",
+  `form-action ${formActionSources}`,
   "object-src 'none'",
   "upgrade-insecure-requests",
 ].join("; ");
