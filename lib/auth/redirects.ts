@@ -10,7 +10,7 @@ function csv(name: string): string[] {
     .filter(Boolean);
 }
 
-function hasAllowedWebScheme(url: URL): boolean {
+export function hasAllowedWebScheme(url: URL): boolean {
   return (
     url.protocol === "https:" ||
     (url.protocol === "http:" && url.hostname === "localhost")
@@ -96,6 +96,7 @@ export function safeExternalReturnUrl(
   try {
     const candidate = new URL(value);
     if (candidate.username || candidate.password) return fallbackUrl;
+    if (!hasAllowedWebScheme(candidate)) return fallbackUrl;
     if (!allowedReturnOrigins().has(candidate.origin)) return fallbackUrl;
     return candidate;
   } catch {

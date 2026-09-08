@@ -107,6 +107,13 @@ test("external returns stay on an allowlisted origin", () => {
       ).href,
       fallback,
     );
+    assert.equal(
+      safeExternalReturnUrl(
+        "blob:https://website-preview.example/attacker-value",
+        fallback,
+      ).href,
+      fallback,
+    );
   });
 });
 

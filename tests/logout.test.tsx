@@ -99,14 +99,17 @@ describe("logout", () => {
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
-  test("POST rejects an external return destination", async () => {
+  test.each([
+    "https://evil.example/steal",
+    "blob:https://website-preview.example/attacker-value",
+  ])("POST rejects unsafe return destination %s", async (returnTo) => {
     mocks.createServerSupabaseClient.mockResolvedValue({
       auth: { signOut: vi.fn().mockResolvedValue({ error: null }) },
     });
     const response = await logoutRoute.POST(
       postRequest({
         origin: "https://login-preview.example",
-        returnTo: "https://evil.example/steal",
+        returnTo,
       }),
     );
     expect(response.headers.get("location")).toBe(

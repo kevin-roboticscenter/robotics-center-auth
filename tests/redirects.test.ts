@@ -63,6 +63,12 @@ describe("external return allowlist", () => {
         fallback,
       ).toString(),
     ).toBe(fallback);
+    expect(
+      safeExternalReturnUrl(
+        "blob:https://preview.roboticscenter.ai/attacker-value",
+        fallback,
+      ).toString(),
+    ).toBe(fallback);
   });
 });
 
