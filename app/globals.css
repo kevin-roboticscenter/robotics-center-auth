@@ -46,6 +46,11 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 a {
   color: inherit;
 }
@@ -139,6 +144,85 @@ a {
   padding: 37px 42px 29px;
 }
 
+.form-error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.form-success {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(74, 222, 128, 0.28);
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.09);
+  color: #d1fae5;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.form-success strong {
+  color: #86efac;
+  font-size: 13px;
+}
+
+.form-success span {
+  color: #b9d6c5;
+}
+
+.resend-confirmation-button {
+  min-height: 36px;
+  margin-top: 6px;
+  border-color: rgba(134, 239, 172, 0.25);
+  background: rgba(255, 255, 255, 0.045);
+  color: #d1fae5;
+}
+
+.resend-confirmation-button:hover:not(:disabled) {
+  border-color: rgba(134, 239, 172, 0.42);
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.consent-card {
+  text-align: center;
+}
+
+.consent-scopes {
+  display: flex;
+  margin: 18px 0;
+  padding: 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.consent-scopes li {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: var(--muted-bright);
+  font-size: 12px;
+}
+
+.consent-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.consent-actions .quiet-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-bright);
+}
+
 .card-highlight {
   position: absolute;
   inset: 0 15% auto;
@@ -164,7 +248,11 @@ a {
   width: 70px;
   height: 70px;
   border-radius: 16px;
+  box-sizing: border-box;
+  padding: 11px 8px;
+  background: #fff;
   filter: drop-shadow(0 11px 22px rgba(0, 0, 0, 0.3));
+  object-fit: contain;
 }
 
 .brand-copy {
@@ -390,6 +478,10 @@ a {
   font-size: 11px;
 }
 
+.form-options-end {
+  justify-content: flex-end;
+}
+
 .form-options a,
 .back-link {
   color: #7eb6ff;
@@ -399,20 +491,6 @@ a {
 .form-options a:hover,
 .back-link:hover {
   color: #a8d0ff;
-}
-
-.checkbox-label {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  cursor: pointer;
-}
-
-.checkbox-label input {
-  width: 13px;
-  height: 13px;
-  margin: 0;
-  accent-color: var(--blue);
 }
 
 .form-assurance {
@@ -541,6 +619,28 @@ a {
   text-align: center;
 }
 
+.unavailable-card {
+  text-align: center;
+}
+
+.unavailable-app-icon {
+  width: 52px;
+  height: 52px;
+  margin: 28px auto -8px;
+}
+
+.unavailable-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.unavailable-actions .quiet-button {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted-bright);
+}
+
 .error-symbol {
   display: grid;
   width: 50px;
@@ -595,6 +695,10 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+.launcher-header form {
+  margin: 0;
+}
+
 .brand-compact {
   flex-direction: row;
   text-align: left;
@@ -604,6 +708,7 @@ a {
   width: 48px;
   height: 48px;
   border-radius: 12px;
+  padding: 8px 6px;
 }
 
 .brand-compact .brand-copy {
@@ -697,6 +802,18 @@ a {
   background: rgba(17, 26, 45, 0.9);
   box-shadow: 0 17px 36px rgba(0, 0, 0, 0.22);
   transform: translateY(-3px);
+}
+
+.app-card-disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.app-card-disabled:hover {
+  border-color: var(--border);
+  background: rgba(8, 14, 26, 0.55);
+  box-shadow: none;
+  transform: none;
 }
 
 .app-icon {

@@ -10,11 +10,16 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "test": "npm run test:node && npm run test:vitest",
+    "test:node": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:vitest": "vitest run",
     "lint": "eslint --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm run build"
+    "check": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.111.0",
     "next": "16.3.3",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -25,6 +30,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "3.2.7"
   }
 }

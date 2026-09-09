@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Sign in | Silicon Valley Robotics Center",
-    template: "%s | Silicon Valley Robotics Center",
+    default: "Sign in | Robotics Center of Silicon Valley",
+    template: "%s | Robotics Center of Silicon Valley",
   },
   description:
-    "Secure access to the Silicon Valley Robotics Center product family.",
+    "Secure access to the Robotics Center of Silicon Valley product family.",
   robots: {
     index: false,
     follow: false,
