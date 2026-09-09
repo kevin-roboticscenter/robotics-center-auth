@@ -10,6 +10,7 @@ import { allowedOAuthClients } from "@/lib/auth/oauth-allowlist";
 
 const websiteCallback =
   "https://preview.roboticscenter.ai/auth/sso/callback";
+const centerOsCallback = "centeros://auth/callback";
 
 function stubMappedOAuthClient() {
   vi.stubEnv(
@@ -124,6 +125,39 @@ describe("OAuth consent allowlists", () => {
         "https://preview.roboticscenter.ai/auth/sso/callback/extra?code=abc",
       ),
     ).toBe(false);
+  });
+
+  test("allows only the exact CenterOS desktop callback for an explicitly mapped client", () => {
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({ "centeros-desktop": [centerOsCallback] }),
+    );
+
+    expect(
+      isAllowedOAuthRequest({
+        clientId: "centeros-desktop",
+        redirectUri: centerOsCallback,
+      }),
+    ).toBe(true);
+    expect(
+      isAllowedOAuthRedirectUrl(
+        `${centerOsCallback}?code=abc&state=123`,
+        centerOsCallback,
+      ),
+    ).toBe(true);
+
+    for (const redirectUri of [
+      "centeros://evil/callback",
+      "centeros://auth/callback/extra",
+      "other-app://auth/callback",
+    ]) {
+      expect(
+        isAllowedOAuthRequest({ clientId: "centeros-desktop", redirectUri }),
+      ).toBe(false);
+      expect(
+        isAllowedOAuthRedirectUrl(`${redirectUri}?code=abc&state=123`),
+      ).toBe(false);
+    }
   });
 
   test("binds every configured client to only its own callbacks", () => {

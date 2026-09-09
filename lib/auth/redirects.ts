@@ -3,6 +3,7 @@ import {
   allowedOAuthRedirectUris,
   hasAllowedWebScheme,
   normalizedOAuthRedirectUri,
+  oauthRedirectBase,
 } from "./oauth-allowlist.ts";
 
 export { hasAllowedWebScheme } from "./oauth-allowlist.ts";
@@ -125,8 +126,8 @@ export function isAllowedOAuthRedirectUrl(
   try {
     const url = new URL(value);
     if (url.username || url.password) return false;
-    if (!hasAllowedWebScheme(url)) return false;
-    const base = `${url.origin}${url.pathname}`;
+    const base = oauthRedirectBase(url);
+    if (!base) return false;
     if (!allowedOAuthRedirectUris().has(base)) return false;
     if (expectedRedirectUri === undefined) return true;
     return normalizedOAuthRedirectUri(expectedRedirectUri) === base;

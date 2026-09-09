@@ -1,4 +1,5 @@
 const CLIENT_MAP_ENV = "AUTH_ALLOWED_OAUTH_CLIENTS";
+const CENTEROS_DESKTOP_REDIRECT_URI = "centeros://auth/callback";
 
 type OAuthAllowlistEnvironment = Record<string, string | undefined>;
 
@@ -9,17 +10,30 @@ export function hasAllowedWebScheme(url: URL): boolean {
   );
 }
 
+function normalizedOAuthRedirectBase(url: URL): string | null {
+  if (hasAllowedWebScheme(url)) return `${url.origin}${url.pathname}`;
+
+  const customSchemeBase = `${url.protocol}//${url.host}${url.pathname}`;
+  return customSchemeBase === CENTEROS_DESKTOP_REDIRECT_URI
+    ? customSchemeBase
+    : null;
+}
+
 export function normalizedOAuthRedirectUri(value: string): string | null {
   if (value.includes("\\") || /[\u0000-\u001f\u007f]/.test(value)) return null;
   try {
     const url = new URL(value);
     if (url.username || url.password || url.search || url.hash) return null;
-    if (!hasAllowedWebScheme(url)) return null;
-    const normalized = `${url.origin}${url.pathname}`;
+    const normalized = normalizedOAuthRedirectBase(url);
+    if (!normalized) return null;
     return value === normalized ? normalized : null;
   } catch {
     return null;
   }
+}
+
+export function oauthRedirectBase(value: URL): string | null {
+  return normalizedOAuthRedirectBase(value);
 }
 
 function csv(value: string | undefined): string[] {

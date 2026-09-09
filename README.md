@@ -17,6 +17,8 @@ OAuth clients and callback destinations are deny-by-default. Configure the
 server-only `AUTH_ALLOWED_OAUTH_CLIENTS` variable as an exact JSON map from each
 client ID to its permitted callback URI array. Invalid maps deny all requests,
 and a callback assigned to one client cannot be used by another client.
+The only supported private-use callback is the exact CenterOS desktop URI
+`centeros://auth/callback`; it must still be explicitly mapped to its client ID.
 
 ## Local development
 

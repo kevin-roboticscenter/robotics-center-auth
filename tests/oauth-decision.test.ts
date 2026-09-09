@@ -154,6 +154,40 @@ describe("OAuth consent decision", () => {
     },
   );
 
+  test("redirects an approved CenterOS client to its exact private-use callback", async () => {
+    const centerOsCallback = "centeros://auth/callback";
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({ "centeros-desktop": [centerOsCallback] }),
+    );
+    const client = authClient({
+      details: trustedDetails({
+        clientId: "centeros-desktop",
+        redirectUri: centerOsCallback,
+      }),
+    });
+    client.auth.oauth.approveAuthorization.mockResolvedValue({
+      data: {
+        redirect_url: `${centerOsCallback}?code=approved&state=state`,
+      },
+      error: null,
+    });
+    mocks.createServerSupabaseClient.mockResolvedValue(client);
+
+    const response = await POST(
+      request({
+        origin: "https://login-preview.example",
+        authorizationId: "authorization-id",
+        decision: "approve",
+      }),
+    );
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      `${centerOsCallback}?code=approved&state=state`,
+    );
+  });
+
   test("rejects a provider redirect outside the callback allowlist", async () => {
     const client = authClient();
     client.auth.oauth.approveAuthorization.mockResolvedValue({
