@@ -147,4 +147,32 @@ describe("OAuth consent page", () => {
       }),
     ).rejects.toThrow("NEXT_REDIRECT:/error?reason=untrusted_client");
   });
+
+  test("requires a user gesture to reopen CenterOS for an already-approved request", async () => {
+    const centerOSCallback = "centeros://auth/callback";
+    const redirectUrl = `${centerOSCallback}?code=existing&state=state`;
+    vi.stubEnv(
+      "AUTH_ALLOWED_OAUTH_CLIENTS",
+      JSON.stringify({ "centeros-preview": [centerOSCallback] }),
+    );
+    mocks.createServerSupabaseClient.mockResolvedValue(
+      client({ redirect_url: redirectUrl }),
+    );
+
+    const page = await ConsentPage({
+      searchParams: Promise.resolve({ authorization_id: "authorization-id" }),
+    });
+    const launch = findElement(page, "a") as ReactElement<{
+      children?: ReactNode;
+      className?: string;
+      href?: string;
+    }> | null;
+
+    expect(launch?.props).toMatchObject({
+      className: "primary-button button-link",
+      href: redirectUrl,
+    });
+    expect(launch?.props.children).toBe("Open CenterOS");
+    expect(mocks.redirect).not.toHaveBeenCalled();
+  });
 });

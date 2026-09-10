@@ -34,6 +34,30 @@ export default async function ConsentPage({ searchParams }: Props) {
     if (!isAllowedOAuthRedirectUrl(data.redirect_url)) {
       redirect("/error?reason=untrusted_client");
     }
+    if (new URL(data.redirect_url).protocol === "centeros:") {
+      return (
+        <AuthShell>
+          <section className="auth-card auth-card-secondary consent-card">
+            <div className="card-highlight" aria-hidden="true" />
+            <Brand />
+            <div className="secondary-heading">
+              <p className="eyebrow">Secure connection</p>
+              <h1>Open CenterOS</h1>
+              <p>
+                Your account is approved. Return to CenterOS to finish signing
+                in.
+              </p>
+            </div>
+            <a
+              className="primary-button button-link"
+              href={data.redirect_url}
+            >
+              Open CenterOS
+            </a>
+          </section>
+        </AuthShell>
+      );
+    }
     redirect(data.redirect_url);
   }
 
