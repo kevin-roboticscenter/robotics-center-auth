@@ -154,39 +154,102 @@ describe("OAuth consent decision", () => {
     },
   );
 
-  test("redirects an approved CenterOS client to its exact private-use callback", async () => {
-    const centerOsCallback = "centeros://auth/callback";
-    vi.stubEnv(
-      "AUTH_ALLOWED_OAUTH_CLIENTS",
-      JSON.stringify({ "centeros-desktop": [centerOsCallback] }),
-    );
-    const client = authClient({
-      details: trustedDetails({
-        clientId: "centeros-desktop",
-        redirectUri: centerOsCallback,
-      }),
-    });
-    client.auth.oauth.approveAuthorization.mockResolvedValue({
-      data: {
-        redirect_url: `${centerOsCallback}?code=approved&state=state`,
-      },
-      error: null,
-    });
-    mocks.createServerSupabaseClient.mockResolvedValue(client);
+  test.each([
+    ["production", "centeros-desktop", "centeros://auth/callback"],
+    [
+      "staging",
+      "centeros-staging-desktop",
+      "centeros-staging://auth/callback",
+    ],
+  ])(
+    "redirects an approved %s CenterOS client to its exact private-use callback",
+    async (_environment, clientId, centerOsCallback) => {
+      vi.stubEnv(
+        "AUTH_ALLOWED_OAUTH_CLIENTS",
+        JSON.stringify({ [clientId]: [centerOsCallback] }),
+      );
+      const client = authClient({
+        details: trustedDetails({
+          clientId,
+          redirectUri: centerOsCallback,
+        }),
+      });
+      client.auth.oauth.approveAuthorization.mockResolvedValue({
+        data: {
+          redirect_url: `${centerOsCallback}?code=approved&state=state`,
+        },
+        error: null,
+      });
+      mocks.createServerSupabaseClient.mockResolvedValue(client);
 
-    const response = await POST(
-      request({
-        origin: "https://login-preview.example",
-        authorizationId: "authorization-id",
-        decision: "approve",
-      }),
-    );
+      const response = await POST(
+        request({
+          origin: "https://login-preview.example",
+          authorizationId: "authorization-id",
+          decision: "approve",
+        }),
+      );
 
-    expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe(
-      `${centerOsCallback}?code=approved&state=state`,
-    );
-  });
+      expect(response.status).toBe(303);
+      expect(response.headers.get("location")).toBe(
+        `${centerOsCallback}?code=approved&state=state`,
+      );
+    },
+  );
+
+  test.each([
+    [
+      "production",
+      "centeros-desktop",
+      "centeros://auth/callback",
+      "centeros-staging://auth/callback",
+    ],
+    [
+      "staging",
+      "centeros-staging-desktop",
+      "centeros-staging://auth/callback",
+      "centeros://auth/callback",
+    ],
+  ])(
+    "rejects a provider redirect from the other CenterOS environment for a %s request",
+    async (_environment, clientId, expectedCallback, returnedCallback) => {
+      vi.stubEnv(
+        "AUTH_ALLOWED_OAUTH_CLIENTS",
+        JSON.stringify({
+          "centeros-desktop": ["centeros://auth/callback"],
+          "centeros-staging-desktop": [
+            "centeros-staging://auth/callback",
+          ],
+        }),
+      );
+      const client = authClient({
+        details: trustedDetails({
+          clientId,
+          redirectUri: expectedCallback,
+        }),
+      });
+      client.auth.oauth.approveAuthorization.mockResolvedValue({
+        data: {
+          redirect_url: `${returnedCallback}?code=approved&state=state`,
+        },
+        error: null,
+      });
+      mocks.createServerSupabaseClient.mockResolvedValue(client);
+
+      const response = await POST(
+        request({
+          origin: "https://login-preview.example",
+          authorizationId: "authorization-id",
+          decision: "approve",
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        error: "Authorization failed",
+      });
+    },
+  );
 
   test("rejects a provider redirect outside the callback allowlist", async () => {
     const client = authClient();

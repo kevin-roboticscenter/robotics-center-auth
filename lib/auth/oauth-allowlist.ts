@@ -1,5 +1,8 @@
 const CLIENT_MAP_ENV = "AUTH_ALLOWED_OAUTH_CLIENTS";
-const CENTEROS_DESKTOP_REDIRECT_URI = "centeros://auth/callback";
+const CENTEROS_DESKTOP_REDIRECT_URIS = new Set([
+  "centeros://auth/callback",
+  "centeros-staging://auth/callback",
+]);
 
 type OAuthAllowlistEnvironment = Record<string, string | undefined>;
 
@@ -14,9 +17,15 @@ function normalizedOAuthRedirectBase(url: URL): string | null {
   if (hasAllowedWebScheme(url)) return `${url.origin}${url.pathname}`;
 
   const customSchemeBase = `${url.protocol}//${url.host}${url.pathname}`;
-  return customSchemeBase === CENTEROS_DESKTOP_REDIRECT_URI
+  return CENTEROS_DESKTOP_REDIRECT_URIS.has(customSchemeBase)
     ? customSchemeBase
     : null;
+}
+
+export function isCenterOSDesktopRedirectUrl(url: URL): boolean {
+  if (url.username || url.password) return false;
+  const base = normalizedOAuthRedirectBase(url);
+  return base !== null && CENTEROS_DESKTOP_REDIRECT_URIS.has(base);
 }
 
 export function normalizedOAuthRedirectUri(value: string): string | null {

@@ -6,7 +6,10 @@ import {
   oauthRedirectBase,
 } from "./oauth-allowlist.ts";
 
-export { hasAllowedWebScheme } from "./oauth-allowlist.ts";
+export {
+  hasAllowedWebScheme,
+  isCenterOSDesktopRedirectUrl,
+} from "./oauth-allowlist.ts";
 
 const DEFAULT_RETURN_ORIGINS = [
   "https://roboticscenter.ai",

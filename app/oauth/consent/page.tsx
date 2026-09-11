@@ -4,6 +4,7 @@ import { Brand } from "@/components/brand";
 import { ConsentActions } from "@/components/consent-actions";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
+  isCenterOSDesktopRedirectUrl,
   isAllowedOAuthRedirectUrl,
   isAllowedOAuthRequest,
 } from "@/lib/auth/redirects";
@@ -34,7 +35,7 @@ export default async function ConsentPage({ searchParams }: Props) {
     if (!isAllowedOAuthRedirectUrl(data.redirect_url)) {
       redirect("/error?reason=untrusted_client");
     }
-    if (new URL(data.redirect_url).protocol === "centeros:") {
+    if (isCenterOSDesktopRedirectUrl(new URL(data.redirect_url))) {
       return (
         <AuthShell>
           <section className="auth-card auth-card-secondary consent-card">
